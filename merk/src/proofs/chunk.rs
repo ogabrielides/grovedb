@@ -9,7 +9,7 @@ use {
     crate::tree::Hash,
     crate::tree::Tree,
 };
-use crate::merk::TreeFeatureType::BasicMerk;
+use crate::merk::tree_feature_type::TreeFeatureType::BasicMerk;
 
 use super::{Node, Op};
 use crate::tree::{Fetch, RefWalker};

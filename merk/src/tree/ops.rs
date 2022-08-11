@@ -3,8 +3,9 @@ use std::{collections::LinkedList, fmt};
 use anyhow::Result;
 use costs::{cost_return_on_error, CostContext, CostsExt, OperationCost};
 use Op::*;
-use crate::merk::{OptionOrMerkType, TreeFeatureType};
+use crate::merk::{OptionOrMerkType};
 use crate::merk::OptionOrMerkType::{NoneOfType, SomeMerk};
+use crate::merk::tree_feature_type::TreeFeatureType;
 
 use super::{Fetch, Link, Tree, Walker};
 use crate::tree::hash::value_hash;
@@ -387,7 +388,7 @@ mod test {
         test_utils::{apply_memonly, assert_tree_invariants, del_entry, make_tree_seq, seq_key},
         tree::*,
     };
-    use crate::merk::TreeFeatureType::BasicMerk;
+    use crate::merk::tree_feature_type::TreeFeatureType::BasicMerk;
 
     #[test]
     fn simple_insert() {

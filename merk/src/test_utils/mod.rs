@@ -8,7 +8,7 @@ use rand::prelude::*;
 pub use temp_merk::TempMerk;
 use crate::merk::OptionOrMerkType;
 use crate::merk::OptionOrMerkType::SomeMerk;
-use crate::merk::TreeFeatureType::BasicMerk;
+use crate::merk::tree_feature_type::TreeFeatureType::BasicMerk;
 
 use crate::tree::{BatchEntry, MerkBatch, NoopCommit, Op, PanicSource, Tree, Walker};
 

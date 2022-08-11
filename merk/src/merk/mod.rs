@@ -1,10 +1,10 @@
 pub mod chunks;
 pub mod restore;
+pub mod tree_feature_type;
 
 use std::{cell::Cell, cmp::Ordering, collections::{BTreeSet, LinkedList}, fmt, mem};
 use std::marker::Destruct;
 use ed::{Decode, Encode};
-
 use anyhow::{anyhow, Result};
 use costs::{cost_return_on_error, CostContext, CostsExt, OperationCost};
 use storage::{self, Batch, RawIterator, StorageContext};
@@ -14,6 +14,8 @@ use crate::{
     tree::{Commit, Fetch, Hash, Link, MerkBatch, Op, RefWalker, Tree, Walker, NULL_HASH},
 };
 use crate::merk::OptionOrMerkType::{NoneOfType, SomeMerk};
+use crate::merk::tree_feature_type::TreeFeatureType;
+use crate::merk::TreeFeatureType::{BasicMerk, SummedMerk};
 
 pub const ROOT_KEY_KEY: &[u8] = b"root";
 
@@ -139,12 +141,6 @@ impl<'a, I: RawIterator> KVIterator<'a, I> {
             None.wrap_with_cost(cost)
         }
     }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode)]
-pub enum TreeFeatureType {
-    BasicMerk,
-    SummedMerk(u64)
 }
 
 #[derive(PartialEq, Eq, Debug)]

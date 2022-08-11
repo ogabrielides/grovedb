@@ -345,7 +345,7 @@ fn read_u8<R: Read>(mut input: R) -> Result<u8> {
 
 #[cfg(test)]
 mod test {
-    use crate::merk::TreeFeatureType::BasicMerk;
+    use crate::merk::tree_feature_type::TreeFeatureType::BasicMerk;
     use super::{
         super::{hash::NULL_HASH, Tree},
         *,

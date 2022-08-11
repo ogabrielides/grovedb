@@ -182,10 +182,10 @@ where
 #[cfg(test)]
 mod test {
     use costs::{CostContext, CostsExt};
+    use crate::merk::tree_feature_type::TreeFeatureType::BasicMerk;
 
     use super::{super::NoopCommit, *};
     use crate::tree::Tree;
-    use crate::tree::TreeFeatureType::BasicMerk;
 
     #[derive(Clone)]
     struct MockSource {}

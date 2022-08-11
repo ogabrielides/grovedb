@@ -1365,7 +1365,7 @@ mod test {
         tree::{NoopCommit, PanicSource, RefWalker, Tree},
     };
     use crate::merk::OptionOrMerkType::SomeMerk;
-    use crate::merk::TreeFeatureType::BasicMerk;
+    use crate::merk::tree_feature_type::TreeFeatureType::BasicMerk;
 
     fn make_3_node_tree() -> Tree {
         let mut tree = Tree::new(vec![5], vec![5], BasicMerk)

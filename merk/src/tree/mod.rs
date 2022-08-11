@@ -23,9 +23,9 @@ use kv::KV;
 pub use link::Link;
 pub use ops::{BatchEntry, MerkBatch, Op, PanicSource};
 pub use walk::{Fetch, RefWalker, Walker};
-use crate::merk::{OptionOrMerkType, TreeFeatureType};
+use crate::merk::{OptionOrMerkType};
 use crate::merk::OptionOrMerkType::{NoneOfType, SomeMerk};
-use crate::merk::TreeFeatureType::BasicMerk;
+use crate::merk::tree_feature_type::TreeFeatureType;
 
 use crate::tree::hash::value_hash;
 
@@ -35,10 +35,10 @@ use crate::tree::hash::value_hash;
 /// The fields of the `Tree` type, stored on the heap.
 #[derive(Clone, Encode, Decode)]
 struct TreeInner {
+    feature_type: TreeFeatureType,
     left: Option<Link>,
     right: Option<Link>,
     kv: KV,
-    feature_type: TreeFeatureType,
 }
 
 impl Terminated for Box<TreeInner> {}
@@ -514,7 +514,7 @@ pub const fn side_to_str(left: bool) -> &'static str {
 #[cfg(test)]
 mod test {
     use crate::merk::OptionOrMerkType::{NoneOfType, SomeMerk};
-    use crate::tree::TreeFeatureType::BasicMerk;
+    use crate::merk::tree_feature_type::TreeFeatureType::BasicMerk;
     use super::{commit::NoopCommit, hash::NULL_HASH, Tree};
 
     #[test]
