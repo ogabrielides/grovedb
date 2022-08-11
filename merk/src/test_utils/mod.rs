@@ -6,11 +6,13 @@ use std::{convert::TryInto, ops::Range};
 pub use crash_merk::CrashMerk;
 use rand::prelude::*;
 pub use temp_merk::TempMerk;
-use crate::merk::OptionOrMerkType;
-use crate::merk::OptionOrMerkType::SomeMerk;
-use crate::merk::tree_feature_type::TreeFeatureType::BasicMerk;
 
-use crate::tree::{BatchEntry, MerkBatch, NoopCommit, Op, PanicSource, Tree, Walker};
+use crate::{
+    merk::{
+        tree_feature_type::TreeFeatureType::BasicMerk, OptionOrMerkType, OptionOrMerkType::SomeMerk,
+    },
+    tree::{BatchEntry, MerkBatch, NoopCommit, Op, PanicSource, Tree, Walker},
+};
 
 pub fn assert_tree_invariants(tree: &Tree) {
     assert!(tree.balance_factor().abs() < 2);
@@ -54,7 +56,10 @@ pub fn apply_memonly(tree: Tree, batch: &MerkBatch<Vec<u8>>) -> Tree {
     tree
 }
 
-pub fn apply_to_memonly(maybe_tree: OptionOrMerkType<Tree>, batch: &MerkBatch<Vec<u8>>) -> OptionOrMerkType<Tree> {
+pub fn apply_to_memonly(
+    maybe_tree: OptionOrMerkType<Tree>,
+    batch: &MerkBatch<Vec<u8>>,
+) -> OptionOrMerkType<Tree> {
     let maybe_walker = maybe_tree.map(|tree| Walker::<PanicSource>::new(tree, PanicSource {}));
     Walker::<PanicSource>::apply_to(maybe_walker, batch, PanicSource {})
         .unwrap()

@@ -4,10 +4,10 @@
 //!
 //! ## Overview
 //!
-//! This crate provides `Encode` and `Decode` traits which can be implemented for any
-//! type that can be converted to or from bytes, and implements these traits for
-//! many built-in Rust types. It also provides derive macros so that `Encode`
-//! and `Decode` can be easily derived for structs.
+//! This crate provides `Encode` and `Decode` traits which can be implemented
+//! for any type that can be converted to or from bytes, and implements these
+//! traits for many built-in Rust types. It also provides derive macros so that
+//! `Encode` and `Decode` can be easily derived for structs.
 //!
 //! `ed` is far simpler than `serde` because it does not attempt to create an
 //! abstraction which allows arbitrary kinds of encoding (JSON, MessagePack,
@@ -31,7 +31,7 @@
 //!
 //! ```rust
 //! #![feature(trivial_bounds)]
-//! use ed::{Encode, Decode};
+//! use ed::{Decode, Encode};
 //!
 //! # fn main() -> ed::Result<()> {
 //! // traits are implemented for built-in types
@@ -42,24 +42,27 @@
 //! #[derive(Encode, Decode)]
 //! # #[derive(PartialEq, Eq, Debug)]
 //! struct Foo {
-//!   bar: (u32, u32),
-//!   baz: Vec<u8>
+//!     bar: (u32, u32),
+//!     baz: Vec<u8>,
 //! }
 //!
 //! // encoding and decoding can be done in-place to reduce allocations
 //!
 //! let mut bytes = vec![0xba; 40];
 //! let mut foo = Foo {
-//!   bar: (0, 0),
-//!   baz: Vec::with_capacity(32)
+//!     bar: (0, 0),
+//!     baz: Vec::with_capacity(32),
 //! };
 //!
 //! // in-place decode, re-using pre-allocated `foo.baz` vec
 //! foo.decode_into(bytes.as_slice())?;
-//! assert_eq!(foo, Foo {
-//!   bar: (0xbabababa, 0xbabababa),
-//!   baz: vec![0xba; 32]
-//! });
+//! assert_eq!(
+//!     foo,
+//!     Foo {
+//!         bar: (0xbabababa, 0xbabababa),
+//!         baz: vec![0xba; 32]
+//!     }
+//! );
 //!
 //! // in-place encode, into pre-allocated `bytes` vec
 //! bytes.clear();
@@ -69,8 +72,10 @@
 //! # }
 //! ```
 
-use std::convert::TryInto;
-use std::io::{Read, Write};
+use std::{
+    convert::TryInto,
+    io::{Read, Write},
+};
 
 pub use ed_derive::*;
 
@@ -169,7 +174,7 @@ pub trait Terminated {}
 macro_rules! int_impl {
     ($type:ty, $length:expr) => {
         impl Encode for $type {
-            #[doc = "Encodes the integer as fixed-size big-endian bytes."]
+            /// Encodes the integer as fixed-size big-endian bytes.
             #[inline]
             fn encode_into<W: Write>(&self, dest: &mut W) -> Result<()> {
                 let bytes = self.to_be_bytes();
@@ -177,8 +182,8 @@ macro_rules! int_impl {
                 Ok(())
             }
 
-            #[doc = "Returns the size of the integer in bytes. Will always"]
-            #[doc = " return an `Ok` result."]
+            /// Returns the size of the integer in bytes. Will always
+            /// return an `Ok` result.
             #[inline]
             fn encoding_length(&self) -> Result<usize> {
                 Ok($length)
@@ -186,7 +191,7 @@ macro_rules! int_impl {
         }
 
         impl Decode for $type {
-            #[doc = "Decodes the integer from fixed-size big-endian bytes."]
+            /// Decodes the integer from fixed-size big-endian bytes.
             #[inline]
             fn decode<R: Read>(mut input: R) -> Result<Self> {
                 let mut bytes = [0; $length];
@@ -247,8 +252,8 @@ impl Decode for bool {
 impl Terminated for bool {}
 
 impl<T: Encode> Encode for Option<T> {
-    /// Encodes as a 0 byte for `None`, or as a 1 byte followed by the encoding of
-    /// the inner value for `Some`.
+    /// Encodes as a 0 byte for `None`, or as a 1 byte followed by the encoding
+    /// of the inner value for `Some`.
     #[inline]
     #[cfg_attr(test, mutate)]
     fn encode_into<W: Write>(&self, dest: &mut W) -> Result<()> {
@@ -286,7 +291,6 @@ impl<T: Decode> Decode for Option<T> {
 
     /// Decodes a 0 byte as `None`, or a 1 byte followed by the encoding of the
     /// inner value as `Some`. Errors for all other values.
-    //
     // When the first byte is 1 and self is `Some`, `decode_into` will be called
     // on the inner type. When the first byte is 1 and self is `None`, `decode`
     // will be called for the inner type.
@@ -453,7 +457,7 @@ impl<T: Decode + Terminated, const N: usize> Decode for [T; N] {
 impl<T: Terminated, const N: usize> Terminated for [T; N] {}
 
 impl<T: Encode + Terminated> Encode for Vec<T> {
-    #[doc = "Encodes the elements of the vector one after another, in order."]
+    /// Encodes the elements of the vector one after another, in order.
     #[inline]
     fn encode_into<W: Write>(&self, dest: &mut W) -> Result<()> {
         for element in self.iter() {
@@ -462,7 +466,7 @@ impl<T: Encode + Terminated> Encode for Vec<T> {
         Ok(())
     }
 
-    #[doc = "Returns the sum of the encoding lengths of all elements."]
+    /// Returns the sum of the encoding lengths of all elements.
     #[cfg_attr(test, mutate)]
     #[inline]
     fn encoding_length(&self) -> Result<usize> {
@@ -475,7 +479,7 @@ impl<T: Encode + Terminated> Encode for Vec<T> {
 }
 
 impl<T: Decode + Terminated> Decode for Vec<T> {
-    #[doc = "Decodes the elements of the vector one after another, in order."]
+    /// Decodes the elements of the vector one after another, in order.
     #[cfg_attr(test, mutate)]
     #[inline]
     fn decode<R: Read>(input: R) -> Result<Self> {
@@ -484,9 +488,9 @@ impl<T: Decode + Terminated> Decode for Vec<T> {
         Ok(vec)
     }
 
-    #[doc = "Encodes the elements of the vector one after another, in order."]
-    #[doc = ""]
-    #[doc = "Recursively calls `decode_into` for each element."]
+    /// Encodes the elements of the vector one after another, in order.
+    ///
+    /// Recursively calls `decode_into` for each element.
     #[cfg_attr(test, mutate)]
     #[inline]
     fn decode_into<R: Read>(&mut self, mut input: R) -> Result<()> {
@@ -517,7 +521,7 @@ impl<T: Decode + Terminated> Decode for Vec<T> {
 }
 
 impl<T: Encode + Terminated> Encode for [T] {
-    #[doc = "Encodes the elements of the slice one after another, in order."]
+    /// Encodes the elements of the slice one after another, in order.
     #[cfg_attr(test, mutate)]
     #[inline]
     fn encode_into<W: Write>(&self, mut dest: &mut W) -> Result<()> {
@@ -527,7 +531,7 @@ impl<T: Encode + Terminated> Encode for [T] {
         Ok(())
     }
 
-    #[doc = "Returns the sum of the encoding lengths of all elements."]
+    /// Returns the sum of the encoding lengths of all elements.
     #[cfg_attr(test, mutate)]
     #[inline]
     fn encoding_length(&self) -> Result<usize> {
@@ -540,14 +544,14 @@ impl<T: Encode + Terminated> Encode for [T] {
 }
 
 impl<T: Encode> Encode for Box<T> {
-    #[doc = "Encodes the inner value."]
+    /// Encodes the inner value.
     #[cfg_attr(test, mutate)]
     #[inline]
     fn encode_into<W: Write>(&self, dest: &mut W) -> Result<()> {
         (**self).encode_into(dest)
     }
 
-    #[doc = "Returns the encoding length of the inner value."]
+    /// Returns the encoding length of the inner value.
     #[cfg_attr(test, mutate)]
     #[inline]
     fn encoding_length(&self) -> Result<usize> {
@@ -556,16 +560,16 @@ impl<T: Encode> Encode for Box<T> {
 }
 
 impl<T: Decode> Decode for Box<T> {
-    #[doc = "Decodes the inner value into a new Box."]
+    /// Decodes the inner value into a new Box.
     #[cfg_attr(test, mutate)]
     #[inline]
     fn decode<R: Read>(input: R) -> Result<Self> {
         T::decode(input).map(|v| v.into())
     }
 
-    #[doc = "Decodes the inner value into the existing Box."]
-    #[doc = ""]
-    #[doc = "Recursively calls `decode_into` on the inner value."]
+    /// Decodes the inner value into the existing Box.
+    ///
+    /// Recursively calls `decode_into` on the inner value.
     #[cfg_attr(test, mutate)]
     #[inline]
     fn decode_into<R: Read>(&mut self, input: R) -> Result<()> {

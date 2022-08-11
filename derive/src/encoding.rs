@@ -331,7 +331,7 @@ fn iter_terminated_bounds(item: &DeriveInput, add: TokenStream) -> TokenStream {
             .enumerate()
             .map(|(i, ty)| {
                 let terminated = if i < fields.len() - 1 {
-                    quote!(::ed::Terminated +)
+                    quote!(::ed::Terminated+)
                 } else {
                     quote!()
                 };

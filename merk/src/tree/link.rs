@@ -1,10 +1,10 @@
 use std::io::{Read, Write};
-use byteorder::{BigEndian, ReadBytesExt};
 
+use byteorder::{BigEndian, ReadBytesExt};
 use ed::{Decode, Encode, Result, Terminated};
-use crate::merk::OptionOrMerkType;
 
 use super::{hash::Hash, Tree};
+use crate::merk::OptionOrMerkType;
 
 // TODO: optimize memory footprint
 
@@ -272,10 +272,16 @@ impl Encode for Link {
         debug_assert!(self.key().len() < 256, "Key length must be less than 256");
 
         Ok(match self {
-            Link::Reference { key, sum, .. } => 1 + key.len() + 32 + 2 + 1 + (sum.is_some() as usize * 8),
+            Link::Reference { key, sum, .. } => {
+                1 + key.len() + 32 + 2 + 1 + (sum.is_some() as usize * 8)
+            }
             Link::Modified { .. } => panic!("No encoding for Link::Modified"),
-            Link::Uncommitted { tree, sum, .. } => 1 + tree.key().len() + 32 + 2 + 1 + (sum.is_some() as usize * 8),
-            Link::Loaded { tree, sum,.. } => 1 + tree.key().len() + 32 + 2 + 1 + (sum.is_some() as usize * 8),
+            Link::Uncommitted { tree, sum, .. } => {
+                1 + tree.key().len() + 32 + 2 + 1 + (sum.is_some() as usize * 8)
+            }
+            Link::Loaded { tree, sum, .. } => {
+                1 + tree.key().len() + 32 + 2 + 1 + (sum.is_some() as usize * 8)
+            }
         })
     }
 }
@@ -309,7 +315,8 @@ impl Decode for Link {
         }
 
         if let Link::Reference {
-            ref mut sum, ref mut key,
+            ref mut sum,
+            ref mut key,
             ref mut hash,
             ref mut child_heights,
         } = self
@@ -325,7 +332,11 @@ impl Decode for Link {
             child_heights.1 = read_u8(&mut input)?;
 
             let has_sum = input.read_u8()? != 0;
-            *sum = if has_sum { Some(input.read_u64::<BigEndian>()?) } else { None };
+            *sum = if has_sum {
+                Some(input.read_u64::<BigEndian>()?)
+            } else {
+                None
+            };
         } else {
             unreachable!()
         }
@@ -345,11 +356,11 @@ fn read_u8<R: Read>(mut input: R) -> Result<u8> {
 
 #[cfg(test)]
 mod test {
-    use crate::merk::tree_feature_type::TreeFeatureType::BasicMerk;
     use super::{
         super::{hash::NULL_HASH, Tree},
         *,
     };
+    use crate::merk::tree_feature_type::TreeFeatureType::BasicMerk;
 
     #[test]
     fn from_modified_tree() {
@@ -513,7 +524,8 @@ mod test {
             bytes,
             vec![
                 3, 1, 2, 3, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55,
-                55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 123, 124, 1, 0, 0, 0, 0, 0, 0, 0, 50
+                55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 123, 124, 1, 0, 0, 0, 0, 0,
+                0, 0, 50
             ]
         );
     }
@@ -533,8 +545,10 @@ mod test {
 
     #[test]
     fn decode_link() {
-        let bytes = vec![3, 1, 2, 3, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55,
-        55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 123, 124, 0];
+        let bytes = vec![
+            3, 1, 2, 3, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55,
+            55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 123, 124, 0,
+        ];
         let link = Link::decode(bytes.as_slice()).expect("expected to decode a link");
         assert_eq!(link.sum(), None);
     }

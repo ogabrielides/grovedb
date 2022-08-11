@@ -1,18 +1,17 @@
 use std::io::{Read, Write};
+
 use byteorder::{BigEndian, ReadBytesExt};
-use ed::{Encode, Terminated, Result, Decode};
-use ed::Error::UnexpectedByte;
+use ed::{Decode, Encode, Error::UnexpectedByte, Result, Terminated};
+
 use crate::merk::tree_feature_type::TreeFeatureType::{BasicMerk, SummedMerk};
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum TreeFeatureType {
     BasicMerk,
-    SummedMerk(u64)
+    SummedMerk(u64),
 }
 
-impl Terminated for TreeFeatureType {
-
-}
+impl Terminated for TreeFeatureType {}
 
 impl Encode for TreeFeatureType {
     #[inline]
@@ -32,8 +31,8 @@ impl Encode for TreeFeatureType {
     #[inline]
     fn encoding_length(&self) -> Result<usize> {
         Ok(match self {
-            BasicMerk => { 1}
-            SummedMerk(_) => { 9}
+            BasicMerk => 1,
+            SummedMerk(_) => 9,
         })
     }
 }
@@ -44,12 +43,12 @@ impl Decode for TreeFeatureType {
         let feature_type = input.read_u8()?;
 
         match feature_type {
-            0 => { Ok(BasicMerk) },
+            0 => Ok(BasicMerk),
             1 => {
                 let sum = input.read_u64::<BigEndian>()?;
                 Ok(SummedMerk(sum))
             }
-            _ => Err(UnexpectedByte(feature_type))
+            _ => Err(UnexpectedByte(feature_type)),
         }
     }
 }
