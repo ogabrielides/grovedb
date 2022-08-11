@@ -168,11 +168,14 @@ impl Op {
     fn encode_into<W: Write>(&self, dest: &mut W) -> Result<()> {
         Encode::encode_into(self, dest).map_err(|e| match e {
             Error::UnexpectedByte(byte) => anyhow!(
-                "failed to encode an proofs::Op structure (UnexpectedByte: {})",
+                "failed to encode a proof::Op structure (UnexpectedByte: {})",
                 byte
             ),
             Error::IOError(error) => {
-                anyhow!("failed to encode an proofs::Op structure ({})", error)
+                anyhow!("failed to encode a proof::Op structure ({})", error)
+            }
+            Error::UnencodableVariant => {
+                anyhow!("failed to encode a proof::UnencodableVariant")
             }
         })
     }
@@ -189,6 +192,9 @@ impl Op {
             ),
             Error::IOError(error) => {
                 anyhow!("failed to decode an proofs::Op structure ({})", error)
+            }
+            Error::UnencodableVariant => {
+                anyhow!("failed to encode a proof::UnencodableVariant")
             }
         })
     }
