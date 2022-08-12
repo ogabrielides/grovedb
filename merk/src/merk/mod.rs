@@ -7,20 +7,17 @@ use std::{
     cmp::Ordering,
     collections::{BTreeSet, LinkedList},
     fmt,
-    marker::Destruct,
     mem,
 };
 
 use anyhow::{anyhow, Result};
 use costs::{cost_return_on_error, CostContext, CostsExt, OperationCost};
-use ed::{Decode, Encode};
 use storage::{self, Batch, RawIterator, StorageContext};
 
 use crate::{
     merk::{
         tree_feature_type::TreeFeatureType,
         OptionOrMerkType::{NoneOfType, SomeMerk},
-        TreeFeatureType::{BasicMerk, SummedMerk},
     },
     proofs::{encode_into, query::QueryItem, Op as ProofOp, Query},
     tree::{Commit, Fetch, Hash, Link, MerkBatch, Op, RefWalker, Tree, Walker, NULL_HASH},
@@ -163,7 +160,7 @@ impl<T> OptionOrMerkType<T> {
     pub fn to_option(self) -> Option<T> {
         match self {
             NoneOfType(_) => None,
-            SomeMerk(T) => Some(T),
+            SomeMerk(t) => Some(t),
         }
     }
 
@@ -171,14 +168,14 @@ impl<T> OptionOrMerkType<T> {
     pub fn from_option(option: Option<T>, default_tree_feature_type: TreeFeatureType) -> Self {
         match option {
             None => NoneOfType(default_tree_feature_type),
-            Some(T) => SomeMerk(T),
+            Some(t) => SomeMerk(t),
         }
     }
 
     #[inline]
     pub fn map<U, F>(self, f: F) -> OptionOrMerkType<U>
     where
-        F: ~const FnOnce(T) -> U,
+        F: FnOnce(T) -> U,
     {
         match self {
             SomeMerk(x) => SomeMerk(f(x)),
@@ -189,7 +186,7 @@ impl<T> OptionOrMerkType<T> {
     #[inline]
     pub fn map_to_option<U, F>(self, f: F) -> Option<U>
     where
-        F: ~const FnOnce(T) -> U,
+        F: FnOnce(T) -> U,
     {
         match self {
             SomeMerk(x) => Some(f(x)),
@@ -222,7 +219,7 @@ impl<T> OptionOrMerkType<T> {
     pub fn as_mut(&mut self) -> OptionOrMerkType<&mut T> {
         match *self {
             SomeMerk(ref mut x) => SomeMerk(x),
-            NoneOfType(T) => NoneOfType(T),
+            NoneOfType(t) => NoneOfType(t),
         }
     }
 
@@ -230,7 +227,7 @@ impl<T> OptionOrMerkType<T> {
     pub const fn as_ref(&self) -> OptionOrMerkType<&T> {
         match *self {
             SomeMerk(ref x) => SomeMerk(x),
-            NoneOfType(T) => NoneOfType(T),
+            NoneOfType(t) => NoneOfType(t),
         }
     }
 

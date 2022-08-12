@@ -8,7 +8,7 @@ use storage::{Batch, StorageContext};
 
 use super::Merk;
 use crate::{
-    merk::{MerkSource, OptionOrMerkType, TreeFeatureType::BasicMerk},
+    merk::{MerkSource, TreeFeatureType::BasicMerk},
     proofs::{
         chunk::{verify_leaf, verify_trunk, MIN_TRUNK_HEIGHT},
         tree::{Child, Tree as ProofTree},

@@ -4,7 +4,6 @@ use byteorder::{BigEndian, ReadBytesExt};
 use ed::{Decode, Encode, Result, Terminated};
 
 use super::{hash::Hash, Tree};
-use crate::merk::OptionOrMerkType;
 
 // TODO: optimize memory footprint
 

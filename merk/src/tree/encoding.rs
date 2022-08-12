@@ -241,6 +241,7 @@ mod tests {
             assert_eq!(*key, [2]);
             assert_eq!(*child_heights, (123u8, 124u8));
             assert_eq!(*hash, [66u8; 32]);
+            assert_eq!(*sum, None)
         } else {
             panic!("Expected Link::Reference");
         }
