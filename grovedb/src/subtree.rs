@@ -87,6 +87,14 @@ impl Element {
         Element::new_tree_with_flags(Default::default(), flags)
     }
 
+    pub fn empty_sum_tree() -> Self {
+        Element::new_sum_tree(Default::default(), 0)
+    }
+
+    pub fn empty_sum_tree_with_flags(flags: ElementFlags) -> Self {
+        Element::new_sum_tree_with_flags(Default::default(), 0, flags)
+    }
+
     pub fn new_item(item_value: Vec<u8>) -> Self {
         Element::Item(item_value, None)
     }
