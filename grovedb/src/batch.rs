@@ -106,6 +106,7 @@ impl fmt::Debug for GroveDbOp {
                 Element::Item(..) => "Insert Item",
                 Element::Reference(..) => "Insert Ref",
                 Element::Tree(..) => "Insert Tree",
+                Element::SumTree(..) => "Insert Sum Tree",
             },
             Op::Delete => "Delete",
             Op::ReplaceTreeHash { .. } => "Replace Tree Hash",
@@ -324,6 +325,12 @@ where
                         ))
                         .wrap_with_cost(cost);
                     }
+                    Element::SumTree(..) => {
+                        return Err(Error::InvalidBatchOperation(
+                            "references can not point to sum trees being updated",
+                        ))
+                            .wrap_with_cost(cost);
+                    }
                 },
                 Op::Delete => {
                     return Err(Error::InvalidBatchOperation(
@@ -366,7 +373,7 @@ where
                     ops_by_qualified_paths,
                     recursions_allowed - 1,
                 ),
-                Element::Tree(..) => {
+                Element::Tree(..) | Element::SumTree(..) => {
                     return Err(Error::InvalidBatchOperation(
                         "references can not point to trees being updated",
                     ))
@@ -442,7 +449,7 @@ where
                             )
                         );
                     }
-                    Element::Item(..) | Element::Tree(..) => {
+                    Element::Item(..) | Element::Tree(..) | Element::SumTree(..) => {
                         if batch_apply_options.validate_insertion_does_not_override {
                             let inserted = cost_return_on_error!(
                                 &mut cost,

@@ -44,6 +44,8 @@ pub enum Element {
     /// Hash is stored to make Merk become different when its subtrees have
     /// changed, otherwise changes won't be reflected in parent trees.
     Tree([u8; 32], ElementFlags),
+    /// Same as a Tree, but contains the Sum of the underlying elements in the tree
+    SumTree([u8; 32], u64, ElementFlags),
 }
 
 impl fmt::Debug for Element {
@@ -108,10 +110,18 @@ impl Element {
         Element::Tree(tree_hash, flags)
     }
 
+    pub fn new_sum_tree(tree_hash: [u8; 32], sum: u64) -> Self {
+        Element::SumTree(tree_hash, sum, None)
+    }
+
+    pub fn new_sum_tree_with_flags(tree_hash: [u8; 32], sum: u64, flags: ElementFlags) -> Self {
+        Element::SumTree(tree_hash, sum, flags)
+    }
+
     /// Grab the optional flag stored in an element
     pub fn get_flags(&self) -> &ElementFlags {
         match self {
-            Element::Tree(_, flags) | Element::Item(_, flags) | Element::Reference(_, flags) => {
+            Element::Tree(_, flags) | Element::SumTree(_,_, flags) | Element::Item(_, flags) | Element::Reference(_, flags) => {
                 flags
             }
         }
@@ -140,7 +150,7 @@ impl Element {
                     path_length
                 }
             }
-            Element::Tree(_, element_flag) => {
+            Element::Tree(_, element_flag) | Element::SumTree(_,_, element_flag)=> {
                 if let Some(flag) = element_flag {
                     flag.len() + 32
                 } else {
@@ -192,6 +202,14 @@ impl Element {
                     0
                 };
                 32 + flag_len + flag_len.required_space() + 1 // + 1 for enum
+            }
+            Element::SumTree(_,_, element_flag) => {
+                let flag_len = if let Some(flag) = element_flag {
+                    flag.len() + 1
+                } else {
+                    0
+                };
+                32 + 8 + flag_len + flag_len.required_space() + 1 // + 1 for enum
             }
         }
     }

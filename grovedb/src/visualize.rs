@@ -29,6 +29,11 @@ impl Visualize for Element {
                 drawer.write(b"tree: ")?;
                 drawer = hash.visualize(drawer)?;
             }
+            Element::SumTree(hash, sum, _) => {
+                drawer.write(b"sum tree: ")?;
+                drawer.write(format!("[sum: {sum}").as_bytes())?;
+                drawer = hash.visualize(drawer)?;
+            }
         }
         Ok(drawer)
     }
