@@ -8,7 +8,7 @@ use storage::{
     Storage,
 };
 
-use crate::Merk;
+use crate::{merk::tree_feature_type::TreeFeatureType::SummedMerk, Merk};
 
 /// Wraps a Merk instance and deletes it from disk it once it goes out of scope.
 pub struct TempMerk {
@@ -23,6 +23,13 @@ impl TempMerk {
         let storage = Box::leak(Box::new(TempStorage::new()));
         let context = storage.get_storage_context(empty()).unwrap();
         let merk = Merk::open(context).unwrap().unwrap();
+        TempMerk { storage, merk }
+    }
+
+    pub fn new_sum_tree() -> Self {
+        let storage = Box::leak(Box::new(TempStorage::new()));
+        let context = storage.get_storage_context(empty()).unwrap();
+        let merk = Merk::open_as_type(context, SummedMerk(0)).unwrap().unwrap();
         TempMerk { storage, merk }
     }
 }

@@ -346,7 +346,8 @@ impl Terminated for () {}
 
 macro_rules! tuple_impl {
     ($( $type:ident ),*; $last_type:ident) => {
-        impl<$($type: Encode + Terminated,)* $last_type: Encode> Encode for ($($type,)* $last_type,) {
+        impl<$($type: Encode + Terminated,)* $last_type: Encode> Encode for
+        ($($type,)* $last_type,) {
             #[doc = "Encodes the fields of the tuple one after another, in"]
             #[doc = " order."]
             #[allow(non_snake_case, unused_mut)]
@@ -371,7 +372,8 @@ macro_rules! tuple_impl {
             }
         }
 
-        impl<$($type: Decode + Terminated,)* $last_type: Decode> Decode for ($($type,)* $last_type,) {
+        impl<$($type: Decode + Terminated,)* $last_type: Decode> Decode for
+        ($($type,)* $last_type,) {
             #[doc = "Decodes the fields of the tuple one after another, in"]
             #[doc = " order."]
             #[allow(unused_mut)]
@@ -397,7 +399,8 @@ macro_rules! tuple_impl {
             }
         }
 
-        impl<$($type: Terminated,)* $last_type: Terminated> Terminated for ($($type,)* $last_type,) {}
+        impl<$($type: Terminated,)* $last_type: Terminated> Terminated
+        for ($($type,)* $last_type,) {}
     }
 }
 

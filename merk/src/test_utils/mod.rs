@@ -83,6 +83,10 @@ pub fn put_entry(n: u64) -> BatchEntry<Vec<u8>> {
     (seq_key(n).to_vec(), Op::Put(vec![123; 60]))
 }
 
+pub fn put_entry_value(n: u64, v: u64) -> BatchEntry<Vec<u8>> {
+    (seq_key(n).to_vec(), Op::Put(seq_key(v).to_vec()))
+}
+
 pub fn del_entry(n: u64) -> BatchEntry<Vec<u8>> {
     (seq_key(n).to_vec(), Op::Delete)
 }
@@ -101,6 +105,20 @@ pub fn make_del_batch_seq(range: Range<u64>) -> Vec<BatchEntry<Vec<u8>>> {
         batch.push(del_entry(n));
     }
     batch
+}
+
+pub fn make_batch_rand_u64(size: u64, seed: u64) -> (Vec<BatchEntry<Vec<u8>>>, u64) {
+    let mut rng: SmallRng = SeedableRng::seed_from_u64(seed);
+    let mut batch = Vec::with_capacity(size.try_into().unwrap());
+    let mut sum: u64 = 0;
+    for _ in 0..size {
+        let n = rng.gen::<u64>();
+        let v = rng.gen::<u32>();
+        sum += v as u64;
+        batch.push(put_entry_value(n, v as u64));
+    }
+    batch.sort_by(|a, b| a.0.cmp(&b.0));
+    (batch, sum)
 }
 
 pub fn make_batch_rand(size: u64, seed: u64) -> Vec<BatchEntry<Vec<u8>>> {

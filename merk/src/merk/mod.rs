@@ -6,8 +6,7 @@ use std::{
     cell::Cell,
     cmp::Ordering,
     collections::{BTreeSet, LinkedList},
-    fmt,
-    mem,
+    fmt, mem,
 };
 
 use anyhow::{anyhow, Result};
@@ -267,6 +266,19 @@ where
             tree: Cell::new(None),
             storage,
             tree_feature_type: TreeFeatureType::BasicMerk,
+        };
+
+        merk.load_root().map_ok(|_| merk)
+    }
+
+    pub fn open_as_type(
+        storage: S,
+        tree_feature_type: TreeFeatureType,
+    ) -> CostContext<Result<Self>> {
+        let mut merk = Self {
+            tree: Cell::new(None),
+            storage,
+            tree_feature_type,
         };
 
         merk.load_root().map_ok(|_| merk)
@@ -955,6 +967,24 @@ mod test {
                 .unwrap()
                 .expect("apply failed");
         }
+    }
+
+    #[test]
+    fn insert_rand_and_sum() {
+        let tree_size = 40;
+        let batch_size = 4;
+        let mut merk = TempMerk::new_sum_tree();
+        let mut total_sum = 0;
+        for i in 0..(tree_size / batch_size) {
+            println!("i:{}", i);
+            let (batch, sum) = make_batch_rand_u64(batch_size, i);
+            total_sum += sum;
+            merk.apply::<_, Vec<_>>(&batch, &[])
+                .unwrap()
+                .expect("apply failed");
+        }
+        println!("total sum:{}", total_sum);
+        assert_eq!(Some(total_sum), merk.tree.take().unwrap().sum())
     }
 
     #[test]

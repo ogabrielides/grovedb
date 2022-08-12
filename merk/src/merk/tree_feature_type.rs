@@ -11,6 +11,21 @@ pub enum TreeFeatureType {
     SummedMerk(u64),
 }
 
+impl TreeFeatureType {
+    pub fn map_leaf_value(&self, value: &Vec<u8>) -> TreeFeatureType {
+        match self {
+            BasicMerk => BasicMerk,
+            SummedMerk(_) => {
+                let value = match value.len() {
+                    8 => u64::from_be_bytes(value.as_slice().try_into().unwrap()),
+                    _ => 0,
+                };
+                SummedMerk(value)
+            }
+        }
+    }
+}
+
 impl Terminated for TreeFeatureType {}
 
 impl Encode for TreeFeatureType {

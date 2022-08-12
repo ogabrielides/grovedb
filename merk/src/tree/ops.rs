@@ -136,7 +136,7 @@ where
             Put(_) => Tree::new(
                 mid_key.as_ref().to_vec(),
                 mid_value.to_vec(),
-                tree_feature_type,
+                tree_feature_type.map_leaf_value(mid_value),
             )
             .unwrap_add_cost(&mut cost),
             PutReference(_, referenced_value) => Tree::new_with_value_hash(
