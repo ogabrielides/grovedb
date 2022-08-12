@@ -595,6 +595,8 @@ where
                 Op::Insert { element } => {
                     if let Element::Tree(..) = element {
                         cost_return_on_error!(&mut cost, merk_tree_cache.insert(&op));
+                    } else if let Element::SumTree(..) = element {
+                        cost_return_on_error!(&mut cost, merk_tree_cache.insert(&op));
                     }
                     Ok(())
                 }
@@ -722,6 +724,8 @@ impl GroveDb {
                                                 Op::ReplaceTreeHash { hash } => *hash = root_hash,
                                                 Op::Insert { element } => {
                                                     if let Element::Tree(hash, _) = element {
+                                                        *hash = root_hash
+                                                    } else if let Element::SumTree(hash, _, _) = element {
                                                         *hash = root_hash
                                                     } else {
                                                         return Err(Error::InvalidBatchOperation(
