@@ -725,7 +725,9 @@ impl GroveDb {
                                                 Op::Insert { element } => {
                                                     if let Element::Tree(hash, _) = element {
                                                         *hash = root_hash
-                                                    } else if let Element::SumTree(hash, _, _) = element {
+                                                    } else if let Element::SumTree(hash, ..) =
+                                                        element
+                                                    {
                                                         *hash = root_hash
                                                     } else {
                                                         return Err(Error::InvalidBatchOperation(
