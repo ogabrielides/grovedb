@@ -44,22 +44,21 @@ pub fn js_object_to_element<'a, C: Context<'a>>(
         "sum_tree" => {
             let js_buffer: Handle<JsBuffer> = js_object.get(cx, "value")?;
             let tree_vec = js_buffer_to_vec_u8(js_buffer, cx);
-            let (hash_vec,sum_vec) = tree_vec.split_at(32);
-            Ok(Element::new_sum_tree(hash_vec.to_vec().try_into().or_else(
-                |v: Vec<u8>| {
+            let (hash_vec, sum_vec) = tree_vec.split_at(32);
+            Ok(Element::new_sum_tree(
+                hash_vec.to_vec().try_into().or_else(|v: Vec<u8>| {
                     cx.throw_error(format!(
                         "Sum Tree buffer is expected to be 40 bytes long, but got {}",
                         v.len()
                     ))
-                },
-            )?, u64::from_be_bytes(sum_vec.to_vec().try_into().or_else(
-                |v: Vec<u8>| {
+                })?,
+                u64::from_be_bytes(sum_vec.to_vec().try_into().or_else(|v: Vec<u8>| {
                     cx.throw_error(format!(
                         "Sum Tree buffer is expected to be 40 bytes long, but got {}",
                         v.len()
                     ))
-                },
-            )?)))
+                })?),
+            ))
         }
         _ => cx.throw_error(format!("Unexpected element type {}", element_string)),
     }
@@ -84,7 +83,7 @@ pub fn element_to_js_object<'a, C: Context<'a>>(
             js_buffer.upcast()
         }
         Element::SumTree(tree, sum, _) => {
-            //todo: add sum
+            // todo: add sum
             let js_buffer = JsBuffer::external(cx, tree);
             js_buffer.upcast()
         }

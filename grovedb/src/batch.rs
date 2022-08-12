@@ -329,7 +329,7 @@ where
                         return Err(Error::InvalidBatchOperation(
                             "references can not point to sum trees being updated",
                         ))
-                            .wrap_with_cost(cost);
+                        .wrap_with_cost(cost);
                     }
                 },
                 Op::Delete => {
