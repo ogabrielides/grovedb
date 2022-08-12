@@ -287,6 +287,8 @@ impl<'db> SiblingsChunkProducer<'db> {
         while let Some(element) = siblings_iter.next().unwrap()? {
             if let (key, Element::Tree(..)) = element {
                 siblings_keys.push_back(key);
+            } else if let (key, Element::SumTree(..)) = element {
+                siblings_keys.push_back(key);
             }
         }
 

@@ -26,7 +26,7 @@ impl GroveDb {
         let path_iter = path.into_iter();
 
         match element {
-            Element::Tree(..) => {
+            Element::Tree(..) | Element::SumTree(..) => {
                 cost_return_on_error!(
                     &mut cost,
                     self.add_subtree(path_iter.clone(), key, element, transaction)

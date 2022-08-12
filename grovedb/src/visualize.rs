@@ -70,6 +70,14 @@ impl GroveDb {
                             drawer = self.draw_subtree(drawer, inner_path, transaction)?;
                             drawer.up();
                         }
+                        Element::Tree(..) => {
+                            drawer.write(b"sum_tree:")?;
+                            drawer.down();
+                            let mut inner_path = path.clone();
+                            inner_path.push(key);
+                            drawer = self.draw_subtree(drawer, inner_path, transaction)?;
+                            drawer.up();
+                        }
                         other => {
                             drawer = other.visualize(drawer)?;
                         }

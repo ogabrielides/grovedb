@@ -391,7 +391,7 @@ impl Element {
             offset,
         } = args;
         match element {
-            Element::Tree(..) => {
+            Element::Tree(..) | Element::SumTree(..) => {
                 let mut path_vec = path.to_vec();
                 let key = cost_return_on_error_no_add!(
                     &cost,

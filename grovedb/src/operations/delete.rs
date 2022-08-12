@@ -195,69 +195,70 @@ impl GroveDb {
                 self.get_raw(path_iter.clone(), key.as_ref(), transaction)
             );
 
-            if let Element::Tree(..) = element {
-                let subtree_merk_path = path_iter.clone().chain(std::iter::once(key));
-                let subtree_merk_path_vec = subtree_merk_path
-                    .clone()
-                    .map(|x| x.to_vec())
-                    .collect::<Vec<Vec<u8>>>();
-                // TODO: may be a bug
-                let _subtrees_paths = cost_return_on_error!(
-                    &mut cost,
-                    self.find_subtrees(subtree_merk_path.clone(), transaction)
-                );
-                let batch_deleted_keys = current_batch_operations
-                    .iter()
-                    .filter_map(|op| match op.op {
-                        Op::Delete => {
-                            if op.path == subtree_merk_path_vec {
-                                Some(op.key.as_slice())
-                            } else {
-                                None
+            match element {
+                Element::Tree(..) | Element::SumTree(..) => {
+                    let subtree_merk_path = path_iter.clone().chain(std::iter::once(key));
+                    let subtree_merk_path_vec = subtree_merk_path
+                        .clone()
+                        .map(|x| x.to_vec())
+                        .collect::<Vec<Vec<u8>>>();
+                    // TODO: may be a bug
+                    let _subtrees_paths = cost_return_on_error!(
+                        &mut cost,
+                        self.find_subtrees(subtree_merk_path.clone(), transaction)
+                    );
+                    let batch_deleted_keys = current_batch_operations
+                        .iter()
+                        .filter_map(|op| match op.op {
+                            Op::Delete => {
+                                if op.path == subtree_merk_path_vec {
+                                    Some(op.key.as_slice())
+                                } else {
+                                    None
+                                }
                             }
+                            _ => None,
+                        })
+                        .collect::<BTreeSet<&[u8]>>();
+                    let mut is_empty = merk_optional_tx!(
+                        &mut cost,
+                        self.db,
+                        subtree_merk_path,
+                        transaction,
+                        subtree,
+                        {
+                            subtree
+                                .is_empty_tree_except(batch_deleted_keys)
+                                .unwrap_add_cost(&mut cost)
                         }
-                        _ => None,
-                    })
-                    .collect::<BTreeSet<&[u8]>>();
-                let mut is_empty = merk_optional_tx!(
-                    &mut cost,
-                    self.db,
-                    subtree_merk_path,
-                    transaction,
-                    subtree,
-                    {
-                        subtree
-                            .is_empty_tree_except(batch_deleted_keys)
-                            .unwrap_add_cost(&mut cost)
-                    }
-                );
+                    );
 
-                // If there is any current batch operation that is inserting something in this
-                // tree then it is not empty either
-                is_empty &= !current_batch_operations.iter().any(|op| match op.op {
-                    Op::Delete => false,
-                    _ => op.path == subtree_merk_path_vec,
-                });
+                    // If there is any current batch operation that is inserting something in this
+                    // tree then it is not empty either
+                    is_empty &= !current_batch_operations.iter().any(|op| match op.op {
+                        Op::Delete => false,
+                        _ => op.path == subtree_merk_path_vec,
+                    });
 
-                let result = if only_delete_tree_if_empty && !is_empty {
-                    Ok(None)
-                } else if is_empty {
-                    Ok(Some(GroveDbOp::delete(
-                        path_iter.map(|x| x.to_vec()).collect(),
-                        key.to_vec(),
-                    )))
-                } else {
-                    Err(Error::NotSupported(
-                        "deletion operation for non empty tree not currently supported",
-                    ))
-                };
-                result.wrap_with_cost(cost)
-            } else {
-                Ok(Some(GroveDbOp::delete(
+                    let result = if only_delete_tree_if_empty && !is_empty {
+                        Ok(None)
+                    } else if is_empty {
+                        Ok(Some(GroveDbOp::delete(
+                            path_iter.map(|x| x.to_vec()).collect(),
+                            key.to_vec(),
+                        )))
+                    } else {
+                        Err(Error::NotSupported(
+                            "deletion operation for non empty tree not currently supported",
+                        ))
+                    };
+                    result.wrap_with_cost(cost)
+                }
+                _ => Ok(Some(GroveDbOp::delete(
                     path_iter.map(|x| x.to_vec()).collect(),
                     key.to_vec(),
                 )))
-                .wrap_with_cost(cost)
+                .wrap_with_cost(cost),
             }
         }
     }
@@ -292,47 +293,64 @@ impl GroveDb {
                 self.get_raw(path_iter.clone(), key.as_ref(), transaction)
             );
 
-            if let Element::Tree(..) = element {
-                let subtree_merk_path = path_iter.clone().chain(std::iter::once(key));
-                let subtrees_paths = cost_return_on_error!(
-                    &mut cost,
-                    self.find_subtrees(subtree_merk_path.clone(), transaction)
-                );
-                let is_empty = merk_optional_tx!(
-                    &mut cost,
-                    self.db,
-                    subtree_merk_path,
-                    transaction,
-                    subtree,
-                    { subtree.is_empty_tree().unwrap_add_cost(&mut cost) }
-                );
+            match element {
+                Element::Tree(..) | Element::SumTree(..) => {
+                    let subtree_merk_path = path_iter.clone().chain(std::iter::once(key));
+                    let subtrees_paths = cost_return_on_error!(
+                        &mut cost,
+                        self.find_subtrees(subtree_merk_path.clone(), transaction)
+                    );
+                    let is_empty = merk_optional_tx!(
+                        &mut cost,
+                        self.db,
+                        subtree_merk_path,
+                        transaction,
+                        subtree,
+                        { subtree.is_empty_tree().unwrap_add_cost(&mut cost) }
+                    );
 
-                if only_delete_tree_if_empty && !is_empty {
-                    return Ok(false).wrap_with_cost(cost);
-                } else {
-                    if !is_empty {
-                        // TODO: dumb traversal should not be tolerated
-                        for subtree_path in subtrees_paths {
-                            merk_optional_tx!(
-                                &mut cost,
-                                self.db,
-                                subtree_path.iter().map(|x| x.as_slice()),
-                                transaction,
-                                mut subtree,
-                                {
-                                    cost_return_on_error!(
-                                        &mut cost,
-                                        subtree.clear().map_err(|e| {
-                                            Error::CorruptedData(format!(
-                                                "unable to cleanup tree from storage: {}",
-                                                e
-                                            ))
-                                        })
-                                    );
-                                }
-                            );
+                    if only_delete_tree_if_empty && !is_empty {
+                        return Ok(false).wrap_with_cost(cost);
+                    } else {
+                        if !is_empty {
+                            // TODO: dumb traversal should not be tolerated
+                            for subtree_path in subtrees_paths {
+                                merk_optional_tx!(
+                                    &mut cost,
+                                    self.db,
+                                    subtree_path.iter().map(|x| x.as_slice()),
+                                    transaction,
+                                    mut subtree,
+                                    {
+                                        cost_return_on_error!(
+                                            &mut cost,
+                                            subtree.clear().map_err(|e| {
+                                                Error::CorruptedData(format!(
+                                                    "unable to cleanup tree from storage: {}",
+                                                    e
+                                                ))
+                                            })
+                                        );
+                                    }
+                                );
+                            }
                         }
+                        merk_optional_tx!(
+                            &mut cost,
+                            self.db,
+                            path_iter.clone(),
+                            transaction,
+                            mut parent_merk,
+                            {
+                                cost_return_on_error!(
+                                    &mut cost,
+                                    Element::delete(&mut parent_merk, &key)
+                                );
+                            }
+                        );
                     }
+                }
+                _ => {
                     merk_optional_tx!(
                         &mut cost,
                         self.db,
@@ -347,17 +365,6 @@ impl GroveDb {
                         }
                     );
                 }
-            } else {
-                merk_optional_tx!(
-                    &mut cost,
-                    self.db,
-                    path_iter.clone(),
-                    transaction,
-                    mut parent_merk,
-                    {
-                        cost_return_on_error!(&mut cost, Element::delete(&mut parent_merk, &key));
-                    }
-                );
             }
             cost_return_on_error!(&mut cost, self.propagate_changes(path_iter, transaction));
             Ok(true).wrap_with_cost(cost)
@@ -396,11 +403,14 @@ impl GroveDb {
                 let storage = storage.unwrap_add_cost(&mut cost);
                 let mut raw_iter = Element::iterator(storage.raw_iter()).unwrap_add_cost(&mut cost);
                 while let Some((key, value)) = cost_return_on_error!(&mut cost, raw_iter.next()) {
-                    if let Element::Tree(..) = value {
-                        let mut sub_path = q.clone();
-                        sub_path.push(key.to_vec());
-                        queue.push(sub_path.clone());
-                        result.push(sub_path);
+                    match value {
+                        Element::Tree(..) | Element::SumTree(..) => {
+                            let mut sub_path = q.clone();
+                            sub_path.push(key.to_vec());
+                            queue.push(sub_path.clone());
+                            result.push(sub_path);
+                        }
+                        _ => {}
                     }
                 }
             })
