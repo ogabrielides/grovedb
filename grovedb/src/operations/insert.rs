@@ -119,7 +119,7 @@ impl GroveDb {
         let element_flag = cost_return_on_error_no_add!(
             &cost,
             match element {
-                Element::Tree(_, flag) => Ok(flag),
+                Element::Tree(_, flag) | Element::SumTree(_, _, flag) => Ok(flag),
                 _ => Err(Error::CorruptedData("element should be a tree".to_owned())),
             }
         );
