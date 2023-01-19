@@ -43,6 +43,7 @@ use crate::{
     operations::proof::util::{ProofReader, ProofType, ProofType::AbsentPath, EMPTY_TREE_HASH},
     Element, Error, GroveDb, PathQuery,
 };
+use crate::query_result_type::PathKeyOptionalElementTrio;
 
 #[cfg(any(feature = "full", feature = "verify"))]
 pub type ProvedKeyValues = Vec<ProvedKeyValue>;
@@ -61,7 +62,7 @@ impl GroveDb {
             let query = PathQuery::merge(query)?;
             GroveDb::verify_query(proof, &query)
         } else {
-            GroveDb::verify_query(proof, query[0])
+            GroveDb::verify_query(proof, query.first().ok_or(Error::InvalidInput("there must be at least pathQuery"))?)
         }
     }
 
@@ -74,6 +75,21 @@ impl GroveDb {
         let hash = verifier.execute_proof(proof, query)?;
 
         Ok((hash, verifier.result_set))
+    }
+
+    /// Verify proof for query
+    pub fn verify_query_with_chained_path_queries<C>(
+        proof: &[u8],
+        first_query: &PathQuery,
+        chained_path_queries: Vec<C>
+    ) -> Result<(CryptoHash, Vec<Vec<PathKeyOptionalElementTrio>>), Error>
+        where
+            C: Fn(Vec<PathKeyOptionalElementTrio>) -> Option<PathQuery>,
+    {
+        let mut verifier = ProofVerifier::new(first_query);
+        let hash = verifier.execute_proof(proof, first_query)?;
+
+        Ok((hash,vec![]))
     }
 }
 

@@ -107,8 +107,7 @@ impl GroveDb {
         allow_cache: bool,
         result_type: QueryResultType,
         transaction: TransactionArg,
-    ) -> CostResult<QueryResultElements, Error>
-where {
+    ) -> CostResult<QueryResultElements, Error> {
         let mut cost = OperationCost::default();
 
         let query = cost_return_on_error_no_add!(&cost, PathQuery::merge(path_queries.to_vec()));
