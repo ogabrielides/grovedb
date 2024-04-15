@@ -43,8 +43,8 @@ fn populate_db(grovedb_path: String) -> GroveDb {
     insert_empty_tree_db(&db, &[MAIN_ΚΕΥ], KEY_INT_0);
 
     let tx = db.start_transaction();
-    let batch_size = 1000;
-    for i in 0..=20 {
+    let batch_size = 100;
+    for i in 0..=10 {
         insert_range_values_db(&db, &[MAIN_ΚΕΥ, KEY_INT_0], i * batch_size, i * batch_size + batch_size - 1, &tx);
     }
     let _ = db.commit_transaction(tx);
@@ -52,14 +52,14 @@ fn populate_db(grovedb_path: String) -> GroveDb {
     insert_empty_tree_db(&db, &[MAIN_ΚΕΥ], KEY_INT_REF_0);
 
     let tx_2 = db.start_transaction();
-    insert_range_ref_double_values_db(&db, &[MAIN_ΚΕΥ, KEY_INT_REF_0], KEY_INT_0, 1, 1000, &tx_2);
+    insert_range_ref_double_values_db(&db, &[MAIN_ΚΕΥ, KEY_INT_REF_0], KEY_INT_0, 1, 50, &tx_2);
     let _ = db.commit_transaction(tx_2);
 
     insert_empty_sum_tree_db(&db, &[MAIN_ΚΕΥ], KEY_INT_A);
 
     let tx_3 = db.start_transaction();
-    insert_sum_element_db(&db, &[MAIN_ΚΕΥ, KEY_INT_A], 1, 1000, &tx_3);
-    insert_range_values_db(&db, &[MAIN_ΚΕΥ, KEY_INT_A], 1001, 2000, &tx_3);
+    insert_range_values_db(&db, &[MAIN_ΚΕΥ, KEY_INT_A], 1, 100, &tx_3);
+    insert_sum_element_db(&db, &[MAIN_ΚΕΥ, KEY_INT_A], 101, 150, &tx_3);
     let _ = db.commit_transaction(tx_3);
     db
 }
@@ -88,9 +88,17 @@ fn main() {
     let root_hash_copy = db_copy.root_hash(None).unwrap().unwrap();
     println!("root_hash_copy: {:?}", hex::encode(root_hash_copy));
 
-    let mut snapshot_checkpoint_0 = db_checkpoint_0.s_create_db_snapshot().unwrap();
+    let mut snapshot_checkpoint_0 = db_checkpoint_0.s_create_db_snapshot(true).unwrap();
     let mut rng = thread_rng(); // Create a random number generator
     snapshot_checkpoint_0.data.shuffle(&mut rng);      // Shuffle the vector in place
+
+    println!("\n######## list of available chunks_ids");
+    println!("{:?}", snapshot_checkpoint_0);
+
+    println!("\n######## fetching chunks...");
+    for (global_chunk_id, chunk_data) in snapshot_checkpoint_0.data.iter_mut() {
+        *chunk_data = db_checkpoint_0.s_fetch_chunk(global_chunk_id.to_string()).unwrap();
+    }
 
     println!("\n######### db_checkpoint_0 -> db_copy state sync");
     db_copy.s_reconstruct_db(snapshot_checkpoint_0).expect("should be able to reconstruct db");

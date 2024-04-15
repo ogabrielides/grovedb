@@ -261,7 +261,7 @@ impl fmt::Debug for s_db_snapshot {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "root_hash:{:?}\n", hex::encode(self.root_hash));
         for (global_chunk_id, _) in self.data.iter() {
-            write!(f, " global:{:?}\n", global_chunk_id);
+            write!(f, " global_chunk_id:{:?}\n", global_chunk_id);
         }
         Ok(())
     }
@@ -1093,6 +1093,7 @@ impl GroveDb {
 
     pub fn s_create_db_snapshot(
         &self,
+        list_only_chunk_ids: bool,
     ) -> Result<s_db_snapshot, Error> {
         let mut db_snapsot = s_db_snapshot::new();
 
@@ -1119,7 +1120,12 @@ impl GroveDb {
                 let (chunk, next_chunk_id) = chunk_producer.chunk(chunk_id.as_str()).unwrap();
 
                 let global_chunk_id = hex::encode(prefix) + &chunk_id;
-                db_snapsot.data.push((global_chunk_id, chunk));
+                if (list_only_chunk_ids) {
+                    db_snapsot.data.push((global_chunk_id, vec![]));
+                }
+                else {
+                    db_snapsot.data.push((global_chunk_id, chunk));
+                }
 
                 chunk_id_opt = next_chunk_id;
             }
@@ -1128,7 +1134,7 @@ impl GroveDb {
         Ok(db_snapsot)
     }
 
-    pub fn s_sort_db_snapshot(
+    fn s_sort_db_snapshot(
         &self,
         snapshot: s_db_snapshot,
     ) -> Result<s_db_snapshot_sorted, Error> {
@@ -1142,9 +1148,9 @@ impl GroveDb {
             let chunk_data = chunk_entry.1;
 
             if (global_chunk_id.len() < CHUNK_PREFIX_LENGTH) {
-                Error::CorruptedData(
+                return Err(Error::CorruptedData(
                     "expected global chunk id of at least 64 length".to_string(),
-                );
+                ));
             }
 
             let chunk_prefix = global_chunk_id.chars().take(CHUNK_PREFIX_LENGTH).collect::<String>();
@@ -1160,7 +1166,7 @@ impl GroveDb {
         Ok(db_snapsot_sorted)
     }
 
-    pub fn s_get_subtrees_metadata<B: AsRef<[u8]>>(
+    fn s_get_subtrees_metadata<B: AsRef<[u8]>>(
         &self,
         path: &SubtreePath<B>,
     ) -> Result<s_subtrees_metadata, Error> {
@@ -1198,6 +1204,49 @@ impl GroveDb {
             }
         }
         Ok(subtrees_metadata)
+    }
+
+    pub fn s_fetch_chunk(
+        &self,
+        global_chunk_id: String
+    ) -> Result<Vec<Op>, Error> {
+        let CHUNK_PREFIX_LENGTH: usize = 64;
+        if (global_chunk_id.len() < CHUNK_PREFIX_LENGTH) {
+            return Err(Error::CorruptedData(
+                "expected global chunk id of at least 64 length".to_string(),
+            ));
+        }
+
+        let chunk_prefix = global_chunk_id.chars().take(CHUNK_PREFIX_LENGTH).collect::<String>();
+        let chunk_id = global_chunk_id.chars().skip(CHUNK_PREFIX_LENGTH).collect::<String>();
+
+        let subtrees_metadata = self.s_get_subtrees_metadata(&SubtreePath::empty()).unwrap();
+
+        match subtrees_metadata.data.get(&chunk_prefix) {
+            Some(path_data) => {
+                let subtree = &path_data.0;
+                let subtree_path: Vec<&[u8]> = subtree.iter().map(|vec| vec.as_slice()).collect();
+                let path: &[&[u8]] = &subtree_path;
+
+                let continue_storage_batch = StorageBatch::new();
+                let merk = self.open_batch_merk_at_path(&continue_storage_batch, path.into(), false).value?;
+
+                if (merk.is_empty_tree().unwrap()) {
+                    return Err(Error::CorruptedData(
+                        "Empty merk".to_string(),
+                    ));
+                }
+
+                let mut chunk_producer = ChunkProducer::new(&merk).unwrap();
+                let (chunk, _) = chunk_producer.chunk(chunk_id.as_str()).unwrap();
+                Ok(chunk)
+            },
+            None => {
+                return Err(Error::CorruptedData(
+                    "Prefix not found".to_string(),
+                ));
+            }
+        }
     }
 
     pub fn s_reconstruct_db(
